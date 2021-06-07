@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game of Life</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <fieldset style="display: block; margin: 10px auto; width: 1024px;">
+        <legend style="font-weight: bolder">Settings</legend>
+        <p>
+            <label for="percentage" style="display: block; font-weight: bold;">Random game</label>
+            <input id="percentage" type="range" min="0" max="100" value="10">
+            <button id="random">Load</button>
+        </p>
+        <p>
+            <label for="file" style="display: block; font-weight: bold;">Run length encoded file game</label>
+            <input id="file" type="file" accept=".rle">
+        </p>
+        <p>
+            <button id="start">▶ Start</button>
+            <button id="stop">◼ Stop</button>
+        </p>
+    </fieldset>
+
+    <canvas id="canvas" width="1024" height="768" style="display: block; margin: 10px auto; border: 1px solid; width: 1024px; height: 768px;"></canvas>
+
+    <script type="module">
+
+import { GameOfLife, randomFiller, rleFiller } from './game-of-life.mjs';
+
+let game;
+
+document.getElementById('random').addEventListener('click', () => {
+    if (game) game.stop();
+    const percentage = Number(document.getElementById('percentage').value) / 100;
+    const canvas = document.getElementById('canvas');
+    game = new GameOfLife(canvas, randomFiller(percentage), { size: 5, color: 'steelblue', torus: true, framesPerSecond: 10 });
+});
+
+document.getElementById('file').addEventListener('change', (event) => {
+    if (! event.target
+        || ! (event.target.files instanceof FileList)
+        || event.target.files.length == 0) {
+        return;
+    }
+    const reader = new FileReader();
+    reader.addEventListener('load', (event) => {
+        if (game) game.stop();
+        const canvas = document.getElementById('canvas');
+        game = new GameOfLife(canvas, rleFiller(event.target.result), { size: 12, color: 'red', torus: false, framesPerSecond: 10 });
+    });
+    reader.readAsText(event.target.files[0]);
+});
+
+document.getElementById('start').addEventListener('click', () => {
+    if (game) game.start();
+});
+
+document.getElementById('stop').addEventListener('click', () => {
+    if (game) game.stop();
+});
+
+    </script>
+</body>
+</html>
