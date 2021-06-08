@@ -111,33 +111,34 @@ export class GameOfLife {
     }
 
     draw() {
-        const ctx = this.#canvas.getContext('2d');
-        ctx.fillStyle = this.#cellColor;
-        for (let i = 0; i < this.#width; i += 1) {
-            for (let j = 0; j < this.#height; j += 1) {
-                if (this.#grid[i][j] === alive) {
-                    ctx.fillRect(i * this.#cellSize, j * this.#cellSize, this.#cellSize, this.#cellSize);
-                }
-                else {
-                    ctx.clearRect(i * this.#cellSize, j * this.#cellSize, this.#cellSize, this.#cellSize);
+        requestAnimationFrame(() => {
+            const ctx = this.#canvas.getContext('2d');
+            ctx.fillStyle = this.#cellColor;
+            for (let i = 0; i < this.#width; i += 1) {
+                for (let j = 0; j < this.#height; j += 1) {
+                    if (this.#grid[i][j] === alive) {
+                        ctx.fillRect(i * this.#cellSize, j * this.#cellSize, this.#cellSize, this.#cellSize);
+                    }
+                    else {
+                        ctx.clearRect(i * this.#cellSize, j * this.#cellSize, this.#cellSize, this.#cellSize);
+                    }
                 }
             }
-        }
+        });
     }
 
     start() {
         if (this.#handler !== undefined) return;
-        this.#handler = setTimeout(() => {
-            requestAnimationFrame(() => {
+        this.#handler = setTimeout(
+            () => {
                 this.draw();
                 const count = this.update();
                 console.log('%c%i%c cells', 'color: red', count, '');
+                if (count === 0) this.draw();
                 this.#handler = undefined;
-                if (count > 0) {
-                    this.start();
-                }
-            });
-        }, 1000 / this.#framesPerSecond);
+                if (count > 0) this.start();
+            },
+            1000 / this.#framesPerSecond);
     }
 
     stop() {

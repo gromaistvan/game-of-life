@@ -16,3 +16,6 @@ typings/
 
 # Run Length Encoded
 *.rle
+
+# JSDoc
+out/
