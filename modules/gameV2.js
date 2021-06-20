@@ -32,6 +32,7 @@ export class GameOfLife {
     #width;
     #height;
     #style;
+    #torus;
     #framesPerSecond;
     #cells;
     #handler;
@@ -42,7 +43,7 @@ export class GameOfLife {
      * @param {fillerCallback} filler - Grid filling logic.
      * @param {GameSettings} settings - General settings.
      */
-    constructor(canvas, filler, { color = '#FF0000', size = 10, framesPerSecond = 5 } = { }) {
+    constructor(canvas, filler, { color = '#FF0000', torus = false, size = 10, framesPerSecond = 5 } = { }) {
         if (! (canvas instanceof HTMLCanvasElement)) throw TypeError('Invalid canvas!');
         if (filler && typeof filler !== 'function') throw TypeError('Invalid filler!');
         if (typeof color !== 'string') throw TypeError('Invalid color!');
@@ -51,10 +52,11 @@ export class GameOfLife {
         if (typeof framesPerSecond !== 'number') throw TypeError('Invalid framesPerSecond!');
 
         this.#canvas = canvas;
-        this.#width = Math.ceil(canvas.width / size);
-        this.#height = Math.ceil(canvas.height / size);
+        this.#width = Math.floor(canvas.width / size);
+        this.#height = Math.floor(canvas.height / size);
         this.#style = { size, color };
-        this.framesPerSecond = framesPerSecond;
+        this.#torus = torus;
+        this.#framesPerSecond = framesPerSecond;
         this.#create(filler);
         requestAnimationFrame(() => this.draw());
     }
@@ -80,8 +82,12 @@ export class GameOfLife {
     }
 
     #neighbours(x, y) {
-        const left = x - 1, mid = x, right = x + 1;
-        const top = y - 1, center = y, bottom = y + 1;
+        const left   = this.#torus && x === 0 ? this.#width - 1 : x - 1,
+              mid    = x,
+              right  = this.#torus && x === this.#width - 1 ? 0 : x + 1,
+              top    = this.#torus && y === 0 ? this.#height - 1 : y - 1,
+              center = y,
+              bottom = this.#torus && y === this.#height - 1 ? 0 : y + 1;
         return (
             this.#cell( left,   top) +
             this.#cell(  mid,   top) +
@@ -96,7 +102,7 @@ export class GameOfLife {
     #boundaries() {
         let xmin = 0, ymin = 0;
         let xmax = this.#width - 1, ymax = this.#height - 1;
-        if (this.#cells) {
+        if (! this.#torus && this.#cells) {
             for (const cell of this.#cells) {
                 if (cell.x < xmin) xmin = cell.x;
                 if (cell.x > xmax) xmax = cell.x;
@@ -111,11 +117,9 @@ export class GameOfLife {
         const cells = [];
         if (typeof filler === 'function') {
             const bound = this.#boundaries();
-            for (let x = bound.xmin - 1; x < bound.xmax + 1; x += 1) {
-                for (let y = bound.ymin - 1; y < bound.ymax + 1; y += 1) {
-                    if (filler(x ,y, this)) {
-                        cells.push({ x, y });
-                    }
+            for (let x = bound.xmin; x <= bound.xmax; x += 1) {
+                for (let y = bound.ymin; y <= bound.ymax; y += 1) {
+                    if (filler(x ,y, this)) cells.push({ x, y });
                 }
             }
         }
@@ -135,6 +139,10 @@ export class GameOfLife {
         return this.#cell(x, y);
     }
 
+    /**
+     * Update states.
+     * @returns {number} Count of live cells.
+     */
     update() {
         this.#create((x, y) => {
             const cell = this.#cell(x, y);
@@ -151,6 +159,9 @@ export class GameOfLife {
         return this.#cells.length;
     }
 
+    /**
+     * Draw current state to canvas.
+     */
     draw() {
         requestAnimationFrame(() => {
             const ctx = this.#canvas.getContext('2d');
@@ -158,16 +169,31 @@ export class GameOfLife {
             for (let x = 0; x < this.#width; x += 1) {
                 for (let y = 0; y < this.#height; y += 1) {
                     if (this.cell(x, y) === alive) {
-                        ctx.fillRect(x * this.#style.size, y * this.#style.size, this.#style.size, this.#style.size);
+                        ctx.fillRect(
+                            x * this.#style.size,
+                            y * this.#style.size,
+                            this.#style.size,
+                            this.#style.size);
                     }
                     else {
-                        ctx.clearRect(x * this.#style.size, y * this.#style.size, this.#style.size, this.#style.size);
+                        ctx.clearRect(
+                            x * this.#style.size,
+                            y * this.#style.size,
+                            this.#style.size,
+                            this.#style.size);
                     }
                 }
             }
         });
     }
 
+    get running() {
+        return this.#handler !== undefined;
+    }
+
+    /**
+     * Start to iterate.
+     */
     start() {
         if (this.#handler !== undefined) return;
         this.#handler = setTimeout(
@@ -182,10 +208,26 @@ export class GameOfLife {
             1000 / this.#framesPerSecond);
     }
 
+    /**
+     * Stop to iterate.
+     */
     stop() {
         if (this.#handler) clearTimeout(this.#handler);
         this.#handler = undefined;
     }
+}
+
+/**
+ * Random filler.
+ * @param {number} percentage - Percentage of living cells.
+ * @returns {fillerCallback} The filler function.
+ */
+ export function randomFiller(percentage) {
+    percentage = Number(percentage);
+    if (isNaN(percentage) || percentage < 0 || 1 < percentage) {
+        throw new RangeError('Percentage should be in [0, 1]!')
+    }
+    return () => Math.random() < percentage;
 }
 
 function loadRle(runLengthEncoded) {
@@ -269,12 +311,4 @@ export function rleFiller(runLengthEncoded) {
             && 0 <= y && y < height
             && grid[y][x];
     }
-}
-
-export function randomFiller(percentage) {
-    percentage = Number(percentage);
-    if (isNaN(percentage) || percentage < 0 || 1 < percentage) {
-        throw new RangeError('Percentage should be in [0, 1]!')
-    }
-    return () => Math.random() < percentage;
 }
