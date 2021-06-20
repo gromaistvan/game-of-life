@@ -1,5 +1,6 @@
 import { GameOfLife, randomFiller, rleFiller } from './modules/gameV2.js';
 
+const settings = { size: 20, color: 'steelblue', torus: true, framesPerSecond: 10 };
 let game;
 
 document.getElementById('random').addEventListener('click', () => {
@@ -10,7 +11,7 @@ document.getElementById('random').addEventListener('click', () => {
     }
     const percentage = Number(document.getElementById('percentage').value) / 100;
     const canvas = document.getElementById('canvas');
-    game = new GameOfLife(canvas, randomFiller(percentage), { size: 20, color: 'steelblue', torus: true, framesPerSecond: 10 });
+    game = new GameOfLife(canvas, randomFiller(percentage), settings);
     if (restart) game.start();
 });
 
@@ -20,6 +21,16 @@ document.getElementById('file').addEventListener('change', (event) => {
         || event.target.files.length === 0) {
         return;
     }
+    let restart = false;
+    if (game && game.running) {
+        game.stop();
+        restart = true;
+    }
+    const rle = FileReaderSync.readAsText(event.target.files[0])
+    const canvas = document.getElementById('canvas');
+    game = new GameOfLife(canvas, rleFiller(rle), settings);
+    if (restart) game.start();
+    /*
     const reader = new FileReader();
     reader.addEventListener('load', (event) => {
         let restart = false;
@@ -32,6 +43,7 @@ document.getElementById('file').addEventListener('change', (event) => {
         if (restart) game.start();
     });
     reader.readAsText(event.target.files[0]);
+    */
 });
 
 document.getElementById('start').addEventListener('click', () => {

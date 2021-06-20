@@ -1,0 +1,19 @@
+{
+  "name": "game-of-life",
+  "version": "1.0.0",
+  "description": "Conway's Game of Life",
+  "author": "Groma István <wavezone@mrginfo.com>",
+  "license": "UNLICENSED",
+  "main": "index.js",
+  "homepage": "https://github.com/gromaistvan/game-of-life#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gromaistvan/game-of-life.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gromaistvan/game-of-life/issues"
+  },
+  "dependencies": {
+    "node-static": "^0.7.11"
+  }
+}
